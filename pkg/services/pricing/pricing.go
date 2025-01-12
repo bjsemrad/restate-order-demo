@@ -16,8 +16,9 @@ type Pricing struct{}
 
 func (Pricing) PriceOrder(ctx restate.Context, order *order.Order) (OrderLinePricing, error) {
 	if rand.Float64() < 0.4 {
-		return OrderLinePricing{}, errors.New("I felt like it")
+		return OrderLinePricing{}, errors.New("I felt like making it fail")
 	}
+
 	result := OrderLinePricing{
 		LinePricing: make(map[string]float64, 0),
 	}

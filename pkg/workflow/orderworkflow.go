@@ -1,25 +1,36 @@
 package orderworkflow
 
 import (
+	"errors"
 	"log"
 	"restate-order-demo/pkg/order"
 	"restate-order-demo/pkg/workflow/steps"
 
-	"github.com/restatedev/sdk-go"
+	restate "github.com/restatedev/sdk-go"
 )
 
-func ProcessOrder(ctx restate.Context, custOrder *order.Order) (order.Order, error) { //TODO comeback to the workflow outpu
+type OrderWorkflow struct {
+	eventProducter *steps.EventBroker
+}
+
+func InitializeWorkflow(eventProducter *steps.EventBroker) *OrderWorkflow {
+	return &OrderWorkflow{
+		eventProducter: eventProducter,
+	}
+}
+
+func (w *OrderWorkflow) ProcessOrder(ctx restate.Context, custOrder *order.Order) (order.Order, error) { //TODO comeback to the workflow outpu
 
 	log.Printf("Start Ensuring Order is Priced: %s.\n", custOrder.OrderNumber)
 	steps.EnsureOrderIsPriced(ctx, custOrder)
 
-	// log.Printf("Start Fraud Check: %s.\n", custOrder.OrderNumber)
-	// fraudErr := orderworkflowstep.StartFraudCheck(ctx, custOrder)
-	// var fraudDetectedError *orderworkflowstep.FraudDetectedError
-	// if fraudErr != nil && !errors.As(fraudErr, &fraudDetectedError) {
-	// 	return *custOrder, fraudErr
-	// }
-	// log.Printf("End Fraud Check Step: %s.\n", custOrder.OrderNumber)
+	log.Printf("Start Fraud Check: %s.\n", custOrder.OrderNumber)
+	fraudErr := steps.StartFraudCheck(ctx, w.eventProducter, custOrder)
+	var fraudDetectedError *steps.FraudDetectedError
+	if fraudErr != nil && !errors.As(fraudErr, &fraudDetectedError) {
+		return *custOrder, fraudErr
+	}
+	log.Printf("End Fraud Check Step: %s.\n", custOrder.OrderNumber)
 	//
 	// log.Printf("Start Validate Business Rules Check Step: %s.\n", custOrder.OrderNumber)
 	// //TODO: Validate Business Rules
